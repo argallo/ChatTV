@@ -36,8 +36,7 @@ public class ChannelAdapter extends ArrayAdapter<Channel> {
         TextView show = (TextView) rowView.findViewById(R.id.firstLine);
         show.setText(channels.get(position).getCurrentShow());
 
-        TextView description = (TextView) rowView.findViewById(R.id.secondLine);
-        description.setText("");
+
         return rowView;
     }
 

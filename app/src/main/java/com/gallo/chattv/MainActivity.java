@@ -46,21 +46,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected String doInBackground(String... params) {
             try {
-                Document document = Jsoup.connect(URL).get();
-                int x = 0;
-                for (Element table : document.select("table")) {
-                    for (Element row : table.select("tr")) {
-                        if(x == 0) {
-                            Elements tds = row.select("td");
-                            listing.add(new Channel(tds.get(0).text(), tds.get(1).text()));
-                        }
+            Document document = Jsoup.connect(URL).get();
+            int x = 0;
+            for (Element table : document.select("table")) {
+                for (Element row : table.select("tr")) {
+                    if(x == 0) {
+                        Elements tds = row.select("td");
+                        listing.add(new Channel(tds.get(0).text(), tds.get(1).text()));
                     }
                 }
-            } catch(Exception e){
-
             }
-            return "Executed";
+        } catch(Exception e){
+
         }
+        return "Executed";
+    }
 
         @Override
         protected void onPostExecute(String aVoid) {
