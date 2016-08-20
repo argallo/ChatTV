@@ -1,10 +1,15 @@
 package com.gallo.chattv;
 
 import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.os.PersistableBundle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -23,46 +28,23 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity {
 
     private final static String URL = "http://tvschedule.zap2it.com/tvlistings/ZCGrid.do?aid=tvschedule";
-    public Map<String, String> listing;
+    public ArrayList<Channel> listing;
+    public ListView listView;
+    public ChannelAdapter adapter;
+
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        listing = new HashMap<>();
-        new Listings().execute();
+        listing = new ArrayList<Channel>();
+        new Listings().execute("");
 
     }
 
-    private class StableArrayAdapter extends ArrayAdapter<String> {
-
-        HashMap<String, Integer> mIdMap = new HashMap<String, Integer>();
-
-        public StableArrayAdapter(Context context, int textViewResourceId,
-                                  List<String> objects) {
-            super(context, textViewResourceId, objects);
-            for (int i = 0; i < objects.size(); ++i) {
-                mIdMap.put(objects.get(i), i);
-            }
-        }
-
+    private class Listings extends AsyncTask<String, Void, String> {
         @Override
-        public long getItemId(int position) {
-            String item = getItem(position);
-            return mIdMap.get(item);
-        }
-
-        @Override
-        public boolean hasStableIds() {
-            return true;
-        }
-
-    }
-    private class Listings extends AsyncTask<Void, Void, Void> {
-
-
-        @Override
-        protected Void doInBackground(Void... params) {
+        protected String doInBackground(String... params) {
             try {
                 Document document = Jsoup.connect(URL).get();
                 int x = 0;
@@ -70,44 +52,67 @@ public class MainActivity extends AppCompatActivity {
                     for (Element row : table.select("tr")) {
                         if(x == 0) {
                             Elements tds = row.select("td");
-                            listing.put(tds.get(0).text(), tds.get(1).text());
+                            listing.add(new Channel(tds.get(0).text(), tds.get(1).text()));
                         }
                     }
                 }
             } catch(Exception e){
 
             }
-            return null;
+            return "Executed";
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
+        protected void onPostExecute(String aVoid) {
             super.onPostExecute(aVoid);
-            for (Map.Entry<String, String> entry : listing.entrySet()) {
-                System.out.println(entry.getKey()+" : "+entry.getValue());
+            if(listView != null){
+                adapter.clear();
+                adapter.addAll(listing);
+                adapter.notifyDataSetChanged();
+                listView.invalidateViews();
+                listView.refreshDrawableState();
+            } else {
+                listView = (ListView) findViewById(R.id.listview);
+                adapter = new ChannelAdapter(MainActivity.this, listing);
+                listView.setAdapter(adapter);
 
+                listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, final View view,
+                                            int position, long id) {
+                        final Channel selectedChannel = (Channel) parent.getItemAtPosition(position);
+                        Intent intent = new Intent(getBaseContext(), ChatActivity.class);
+                        intent.putExtra("SELECTED_CHANNEL", selectedChannel.getChannelName());
+                        intent.putExtra("CURRENT_SHOW", selectedChannel.getCurrentShow());
+                        startActivity(intent);
+                    }
+
+                });
             }
-
-            final ListView listview = (ListView) findViewById(R.id.listview);
-            ChannelAdapter adapter = new ChannelAdapter(MainActivity.this,
-                    listing.keySet().toArray(new String[listing.size()]),
-                    listing.values().toArray(new String[listing.size()]));
-            listview.setAdapter(adapter);
-
-            listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-
-                @Override
-                public void onItemClick(AdapterView<?> parent, final View view,
-                                        int position, long id) {
-                    final String item = (String) parent.getItemAtPosition(position);
-
-                }
-
-            });
 
         }
     }
 
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.refresh, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle item selection
+        switch (item.getItemId()) {
+            case R.id.refresh:
+                listing = new ArrayList<Channel>();
+                new Listings().execute();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+    }
 
 }
