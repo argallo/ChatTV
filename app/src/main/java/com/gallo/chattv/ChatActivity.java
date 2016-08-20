@@ -91,14 +91,16 @@ public class ChatActivity extends AppCompatActivity {
                     }
                 }
             }
-        });
+        }).start();
     }
 
     public void sendMessage(){
         if(!editText.getText().toString().equals("")) {
             currentMessage = editText.getText().toString();
+
             allmessages.add(currentMessage);
             chatAdapter.add(currentMessage);
+            currentMessage = currentMessage.replaceAll(" ", "%20");
             chatAdapter.notifyDataSetChanged();
             chatListView.setSelection(chatAdapter.getCount()-1);
             editText.setText("");
@@ -126,6 +128,7 @@ public class ChatActivity extends AppCompatActivity {
             try {
                 Document document = Jsoup.connect(GetChat+channelName).get();
                 String messages = document.body().text();
+                messages = messages.replaceAll("%20", " ");
                 Log.i("tag", messages);
                 newMessages = messages.split("~~");
                 Log.i("first", newMessages[0]);
@@ -139,6 +142,7 @@ public class ChatActivity extends AppCompatActivity {
         protected void onPostExecute(String aVoid) {
             super.onPostExecute(aVoid);
             if(newMessages.length > allmessages.size()){
+                chatAdapter.clear();
                 chatAdapter.addAll(newMessages);
                 allmessages = new ArrayList<>(Arrays.asList(newMessages));
                 chatAdapter.notifyDataSetChanged();
